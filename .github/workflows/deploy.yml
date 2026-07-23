@@ -43,7 +43,13 @@ jobs:
         docker build -t $IMAGE .
         docker push $IMAGE
 
-    - name: Configurar kubectl
+    - name: Create Kubernetes Secret
+      run: |
+        kubectl create secret generic db-secret \
+          --from-literal=url='${{ secrets.DATABASE_URL }}' \
+          --dry-run=client -o yaml | kubectl apply -f -
+    
+   - name: Configurar kubectl
       run: |
         echo "${{ secrets.MGC_KUBECONFIG }}" > kubeconfig.yaml
 
@@ -54,8 +60,3 @@ jobs:
         envsubst < k8s/app.yaml | kubectl apply -f -
         kubectl rollout status deployment/cloud-application
 
-    - name: Create Kubernetes Secret
-      run: |
-        kubectl create secret generic db-secret \
-          --from-literal=url='${{ secrets.DATABASE_URL }}' \
-          --dry-run=client -o yaml | kubectl apply -f -
